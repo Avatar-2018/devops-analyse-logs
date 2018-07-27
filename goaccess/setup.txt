@@ -1,0 +1,43 @@
+STEP 1:
+mkdir  -p nginx-log-analysis/data
+mkdir  -p nginx-log-analysis/logs
+mkdir  -p nginx-log-analysis/report
+
+docker pull allinurl/goaccess
+
+# place goaccess.conf in ./data folder 
+# report genrated inside html folder
+# place start-process.sh in ./data folder 
+
+STEP 2. Create start-porcess.sh
+# Begin start-process.sh
+#!/bin/sh
+
+#Create this format based in web server log format. 
+goaccess -f /srv/logs/upstream-greeneye.log --log-format=='%h ==> \"%^\" ==> [%d:%t %^] ==> \"%r\" %s %b \"%R\" %T' --date-format='%d/%b/%Y' --time-format='%T' -a -o /srv/report/output.html
+
+
+#above format is w.r.t below nginx log format.
+#'$remote_addr ==> "$upstream_addr" ==> [$time_local] ==> "$request" '            '$status $body_bytes_sent "$http_referer" '            '$request_time';
+# End start-process.sh
+
+STEP 3. Create start-goaccess.sh
+#Script to start docker and generate report
+# BEGIN start-goaccess.sh
+#!/bin/bash
+
+docker run --rm \
+-v "/home/ubuntu/nginx-log-analysis/data:/srv/data" \
+-v "/home/ubuntu/nginx-log-analysis/html:/srv/report" \
+-v "/home/ubuntu/nginx-log-analysis/logs:/srv/logs" \
+--name=goaccess allinurl/goaccess \
+sh -c "sh /srv/data/start-process.sh"
+
+# END start-goaccess.sh
+
+Step 4. Run Go access
+
+Place the access.log file in nginx-log-analysis/logs folder and give below commamd
+sh ./start-goaccess.sh
+
+View the output.html generate inside nginx-log-analysis/report
